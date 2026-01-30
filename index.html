@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Idea House</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Noto+Sans+SC:wght@100;300;400;500;700;900&display=swap');
@@ -1034,12 +1034,238 @@
             padding: 40px 20px;
             color: #999;
         }
+
+        /* ===== Mobile / Touch Foundations ===== */
+        html {
+            touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        .canvas-container {
+            touch-action: none;
+            -webkit-overflow-scrolling: auto;
+        }
+
+        body.touch-device {
+            overscroll-behavior: none;
+            -webkit-touch-callout: none;
+        }
+
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        /* Touch devices: always show interactive controls */
+        body.touch-device .note-actions { opacity: 1; }
+        body.touch-device .color-picker-mini { opacity: 1; }
+        body.touch-device .resize-handle { opacity: 0.6; }
+        body.touch-device .canvas-text-box .text-delete-btn { opacity: 1; }
+        body.touch-device .canvas-text-box .text-resize-handle { opacity: 0.6; }
+        body.touch-device .text-font-size-control { opacity: 1; }
+        body.touch-device .time-tooltip { display: none; }
+        body.touch-device .image-preview-actions { opacity: 1; }
+
+        /* ===== Mobile Responsive ===== */
+        @media (max-width: 768px) {
+            .toolbar {
+                padding: 8px 12px;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .toolbar-left {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .toolbar-left h1 {
+                font-size: 1.2em;
+            }
+
+            .mobile-menu-btn {
+                display: flex;
+                background: white;
+                border: 2px solid #210F04;
+                border-radius: 8px;
+                width: 44px;
+                height: 44px;
+                align-items: center;
+                justify-content: center;
+                font-size: 22px;
+                cursor: pointer;
+                color: #210F04;
+            }
+
+            .toolbar-right {
+                display: none;
+                flex-direction: column;
+                width: 100%;
+                gap: 6px;
+            }
+
+            .toolbar-right.show {
+                display: flex;
+            }
+
+            .toolbar-right .btn {
+                width: 100%;
+                text-align: center;
+                padding: 12px 16px;
+                font-size: 15px;
+            }
+
+            .canvas-container {
+                top: 50px;
+            }
+
+            /* Zoom controls */
+            .zoom-controls {
+                bottom: 12px;
+                right: 12px;
+            }
+
+            .zoom-btn {
+                width: 44px;
+                height: 44px;
+            }
+
+            /* Larger touch targets */
+            .note-action-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+            }
+
+            .color-dot {
+                width: 32px;
+                height: 32px;
+            }
+
+            .color-option-dot {
+                width: 32px;
+                height: 32px;
+            }
+
+            .resize-handle {
+                width: 44px;
+                height: 44px;
+            }
+
+            .canvas-text-box .text-delete-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+                top: -16px;
+                right: -16px;
+            }
+
+            .canvas-text-box .text-resize-handle {
+                width: 44px;
+                height: 44px;
+            }
+
+            .text-font-size-control {
+                padding: 4px 10px;
+            }
+
+            .text-font-size-control button {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+
+            /* Modals: full screen */
+            .modal-content {
+                padding: 20px 16px;
+                max-width: 100%;
+                width: 100%;
+                height: 100%;
+                max-height: 100vh;
+                border-radius: 0;
+                border: none;
+            }
+
+            .editor-content {
+                max-width: 100%;
+                width: 100%;
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+                border: none;
+            }
+
+            .editor-header {
+                padding: 14px 16px;
+            }
+
+            .editor-header h2 {
+                font-size: 1.2em;
+            }
+
+            .editor-body {
+                padding: 16px;
+            }
+
+            .editor-field textarea {
+                min-height: 120px;
+            }
+
+            .editor-actions {
+                padding: 14px 16px;
+            }
+
+            .modal-header h2 {
+                font-size: 1.3em;
+            }
+
+            /* Search panel: full width */
+            .search-panel {
+                top: 50px;
+                right: 0;
+                left: 0;
+                width: 100%;
+                max-height: 50vh;
+                border-radius: 0 0 12px 12px;
+            }
+
+            /* Recycle bin items */
+            .recycle-item {
+                flex-wrap: wrap;
+            }
+
+            .recycle-item-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .recycle-item-actions .btn {
+                padding: 10px 14px;
+            }
+
+            /* Color selector grid */
+            .color-option {
+                min-height: 44px;
+            }
+
+            .recycle-empty {
+                padding: 20px 16px;
+            }
+
+            /* Image preview grid */
+            .image-preview-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            }
+        }
     </style>
 </head>
 <body>
     <div class="toolbar">
         <div class="toolbar-left">
             <h1 id="mainTitle">Idea House</h1>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()">&#9776;</button>
         </div>
         <div class="toolbar-right">
             <button class="btn btn-primary" onclick="openAddModal()">New Idea</button>
@@ -1215,6 +1441,23 @@
         let selectedColor = '#210F04';
         let editingId = null;
         let editorImages = []; // Temporary image array for editor
+
+        /* ===== Mobile / Touch Support ===== */
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        let lastTapTime = 0;
+        let longPressTimer = null;
+        let touchStartPos = null;
+        let pinchStartDist = null;
+        let pinchStartZoom = null;
+        let activeTouchAction = null;
+
+        if (isTouchDevice) {
+            document.body.classList.add('touch-device');
+        }
+
+        function toggleMobileMenu() {
+            document.querySelector('.toolbar-right').classList.toggle('show');
+        }
 
         /* ===== Utility functions ===== */
         function isLight(hex) {
@@ -1652,6 +1895,385 @@
             }
             updateZoom();
         }, { passive: false });
+
+        /* ===== Touch Event System ===== */
+        function getTouchDistance(t1, t2) {
+            const dx = t1.clientX - t2.clientX;
+            const dy = t1.clientY - t2.clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function cancelLongPress() {
+            if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+        }
+
+        function startGroupDragTouch(touch) {
+            const items = [];
+            selectedIds.forEach(id => {
+                const idea = ideas.find(i => i.id === id);
+                if (idea) items.push({ type: 'idea', id, origX: idea.x, origY: idea.y });
+            });
+            selectedTextIds.forEach(id => {
+                const tb = textBoxes.find(t => t.id === id);
+                if (tb) items.push({ type: 'text', id, origX: tb.x, origY: tb.y });
+            });
+            if (items.length > 0) {
+                groupDragging = { startClientX: touch.clientX, startClientY: touch.clientY, items };
+            }
+        }
+
+        function showTouchInfo(idea) {
+            if (!idea) return;
+            const toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:white;padding:12px 20px;border-radius:10px;font-size:13px;z-index:3000;text-align:center;pointer-events:none;';
+            toast.innerHTML = `Created: ${formatDate(idea.created)}<br>Modified: ${formatDate(idea.modified)}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+
+        if (isTouchDevice) {
+            const cc = document.getElementById('canvasContainer');
+
+            cc.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+
+                if (e.touches.length === 2) {
+                    cancelLongPress();
+                    activeTouchAction = 'pinch';
+                    pinchStartDist = getTouchDistance(e.touches[0], e.touches[1]);
+                    pinchStartZoom = zoom;
+                    return;
+                }
+
+                if (e.touches.length !== 1) return;
+                const touch = e.touches[0];
+                const target = document.elementFromPoint(touch.clientX, touch.clientY);
+
+                const stickyNote = target && target.closest('.sticky-note');
+                const textBox = target && target.closest('.canvas-text-box');
+                const isActionBtn = target && target.closest('.note-action-btn');
+                const isColorPicker = target && target.closest('.color-picker-mini');
+                const isResizeHandle = target && target.closest('.resize-handle');
+                const isTextResize = target && target.closest('.text-resize-handle');
+                const isTextDelete = target && target.closest('.text-delete-btn');
+                const isFontControl = target && target.closest('.text-font-size-control');
+
+                // Let button/control clicks pass through
+                if (isActionBtn || isTextDelete || isFontControl) {
+                    // Simulate click for these elements
+                    target.click();
+                    return;
+                }
+
+                if (isColorPicker) {
+                    // Let color picker handle itself
+                    const colorDot = target.closest('.color-dot');
+                    const colorOptionDot = target.closest('.color-option-dot');
+                    if (colorDot) colorDot.click();
+                    else if (colorOptionDot) colorOptionDot.click();
+                    return;
+                }
+
+                // Sticker resize handle
+                if (isResizeHandle && stickyNote) {
+                    activeTouchAction = 'resize';
+                    const id = parseInt(stickyNote.dataset.id);
+                    const idea = ideas.find(i => i.id === id);
+                    if (idea) {
+                        resizing = { id, startX: touch.clientX, startY: touch.clientY, startW: idea.w, startH: idea.h };
+                    }
+                    return;
+                }
+
+                // Text box resize handle
+                if (isTextResize && textBox) {
+                    activeTouchAction = 'text-resize';
+                    const id = parseInt(textBox.dataset.textId);
+                    const tb = textBoxes.find(t => t.id === id);
+                    if (tb) {
+                        textResizing = { id, startX: touch.clientX, startY: touch.clientY, startW: tb.w, startH: tb.h };
+                    }
+                    return;
+                }
+
+                touchStartPos = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+
+                // Sticker interactions
+                if (stickyNote) {
+                    const id = parseInt(stickyNote.dataset.id);
+                    const idea = ideas.find(i => i.id === id);
+
+                    if (canvasLocked) {
+                        if (selectedIds.has(id)) {
+                            activeTouchAction = 'group-drag';
+                            startGroupDragTouch(touch);
+                        } else {
+                            selectedIds.clear(); selectedTextIds.clear();
+                            selectedIds.add(id);
+                            render();
+                            activeTouchAction = 'group-drag';
+                            startGroupDragTouch(touch);
+                        }
+                    } else {
+                        activeTouchAction = 'drag-sticker';
+                        if (idea) {
+                            dragging = { el: stickyNote, idea, startX: touch.clientX / zoom, startY: touch.clientY / zoom, origX: idea.x, origY: idea.y };
+                        }
+                        // Long-press for time info
+                        longPressTimer = setTimeout(() => { showTouchInfo(idea); }, 600);
+                    }
+                    return;
+                }
+
+                // Text box interactions
+                if (textBox && !textBox.classList.contains('editing')) {
+                    const id = parseInt(textBox.dataset.textId);
+                    const tb = textBoxes.find(t => t.id === id);
+
+                    if (canvasLocked) {
+                        if (selectedTextIds.has(id)) {
+                            activeTouchAction = 'group-drag';
+                            startGroupDragTouch(touch);
+                        } else {
+                            selectedIds.clear(); selectedTextIds.clear();
+                            selectedTextIds.add(id);
+                            render();
+                            activeTouchAction = 'group-drag';
+                            startGroupDragTouch(touch);
+                        }
+                    } else {
+                        activeTouchAction = 'drag-text';
+                        if (tb) {
+                            textDragging = { el: textBox, tb, startX: touch.clientX / zoom, startY: touch.clientY / zoom, origX: tb.x, origY: tb.y };
+                        }
+                    }
+                    return;
+                }
+
+                // Empty canvas area
+                if (target === cc || target === document.getElementById('canvas')) {
+                    if (canvasLocked) {
+                        activeTouchAction = 'selecting';
+                        const canvasEl = document.getElementById('canvas');
+                        const canvasRect = canvasEl.getBoundingClientRect();
+                        const sx = (touch.clientX - canvasRect.left) / zoom;
+                        const sy = (touch.clientY - canvasRect.top) / zoom;
+                        selecting = { startX: sx, startY: sy };
+                        selectRectEl = document.createElement('div');
+                        selectRectEl.className = 'selection-rect';
+                        selectRectEl.style.cssText = `left:${sx}px;top:${sy}px;width:0;height:0`;
+                        canvasEl.appendChild(selectRectEl);
+                    } else {
+                        activeTouchAction = 'pan';
+                        panning = true;
+                        panStartX = touch.clientX;
+                        panStartY = touch.clientY;
+                        panOrigX = panX;
+                        panOrigY = panY;
+                    }
+                }
+            }, { passive: false });
+
+            cc.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+
+                if (e.touches.length === 2 && activeTouchAction === 'pinch') {
+                    const newDist = getTouchDistance(e.touches[0], e.touches[1]);
+                    zoom = Math.max(0.3, Math.min(3, pinchStartZoom * (newDist / pinchStartDist)));
+                    updateZoom();
+                    return;
+                }
+
+                if (e.touches.length !== 1) return;
+                const touch = e.touches[0];
+
+                // Cancel long-press if moved
+                if (touchStartPos) {
+                    if (Math.abs(touch.clientX - touchStartPos.x) > 10 || Math.abs(touch.clientY - touchStartPos.y) > 10) {
+                        cancelLongPress();
+                    }
+                }
+
+                if (activeTouchAction === 'pan' && panning) {
+                    panX = panOrigX + (touch.clientX - panStartX);
+                    panY = panOrigY + (touch.clientY - panStartY);
+                    updateZoom();
+                } else if (activeTouchAction === 'drag-sticker' && dragging) {
+                    cancelLongPress();
+                    const dx = touch.clientX / zoom - dragging.startX;
+                    const dy = touch.clientY / zoom - dragging.startY;
+                    dragging.idea.x = dragging.origX + dx;
+                    dragging.idea.y = dragging.origY + dy;
+                    dragging.el.style.left = dragging.idea.x + 'px';
+                    dragging.el.style.top = dragging.idea.y + 'px';
+                } else if (activeTouchAction === 'drag-text' && textDragging) {
+                    const dx = touch.clientX / zoom - textDragging.startX;
+                    const dy = touch.clientY / zoom - textDragging.startY;
+                    textDragging.tb.x = textDragging.origX + dx;
+                    textDragging.tb.y = textDragging.origY + dy;
+                    textDragging.el.style.left = textDragging.tb.x + 'px';
+                    textDragging.el.style.top = textDragging.tb.y + 'px';
+                } else if (activeTouchAction === 'resize' && resizing) {
+                    const dx = (touch.clientX - resizing.startX) / zoom;
+                    const dy = (touch.clientY - resizing.startY) / zoom;
+                    const idea = ideas.find(i => i.id === resizing.id);
+                    if (idea) {
+                        idea.w = Math.max(40, Math.min(500, resizing.startW + dx));
+                        idea.h = Math.max(40, Math.min(500, resizing.startH + dy));
+                        const noteEl = document.querySelector(`[data-id="${idea.id}"]`);
+                        if (noteEl) {
+                            noteEl.style.width = idea.w + 'px';
+                            noteEl.style.height = idea.h + 'px';
+                            const fs = Math.max(0.8, Math.min(1.4, idea.w / 180));
+                            noteEl.querySelector('.note-title').style.fontSize = fs + 'em';
+                        }
+                    }
+                } else if (activeTouchAction === 'text-resize' && textResizing) {
+                    const dx = (touch.clientX - textResizing.startX) / zoom;
+                    const dy = (touch.clientY - textResizing.startY) / zoom;
+                    const tb = textBoxes.find(t => t.id === textResizing.id);
+                    if (tb) {
+                        tb.w = Math.max(80, textResizing.startW + dx);
+                        tb.h = Math.max(40, textResizing.startH + dy);
+                        const el = document.querySelector(`[data-text-id="${tb.id}"]`);
+                        if (el) { el.style.width = tb.w + 'px'; el.style.height = tb.h + 'px'; }
+                    }
+                } else if (activeTouchAction === 'group-drag' && groupDragging) {
+                    const dx = (touch.clientX - groupDragging.startClientX) / zoom;
+                    const dy = (touch.clientY - groupDragging.startClientY) / zoom;
+                    groupDragging.items.forEach(item => {
+                        const nx = item.origX + dx;
+                        const ny = item.origY + dy;
+                        if (item.type === 'idea') {
+                            const idea = ideas.find(i => i.id === item.id);
+                            if (idea) { idea.x = nx; idea.y = ny; }
+                            const el = document.querySelector(`[data-id="${item.id}"]`);
+                            if (el) { el.style.left = nx + 'px'; el.style.top = ny + 'px'; }
+                        } else {
+                            const tb = textBoxes.find(t => t.id === item.id);
+                            if (tb) { tb.x = nx; tb.y = ny; }
+                            const el = document.querySelector(`[data-text-id="${item.id}"]`);
+                            if (el) { el.style.left = nx + 'px'; el.style.top = ny + 'px'; }
+                        }
+                    });
+                } else if (activeTouchAction === 'selecting' && selecting) {
+                    const canvasEl = document.getElementById('canvas');
+                    const canvasRect = canvasEl.getBoundingClientRect();
+                    const cx = (touch.clientX - canvasRect.left) / zoom;
+                    const cy = (touch.clientY - canvasRect.top) / zoom;
+                    if (selectRectEl) {
+                        selectRectEl.style.left = Math.min(selecting.startX, cx) + 'px';
+                        selectRectEl.style.top = Math.min(selecting.startY, cy) + 'px';
+                        selectRectEl.style.width = Math.abs(cx - selecting.startX) + 'px';
+                        selectRectEl.style.height = Math.abs(cy - selecting.startY) + 'px';
+                    }
+                }
+            }, { passive: false });
+
+            cc.addEventListener('touchend', (e) => {
+                cancelLongPress();
+
+                // Double-tap detection
+                if (touchStartPos && e.changedTouches.length === 1) {
+                    const touch = e.changedTouches[0];
+                    const dx = touch.clientX - touchStartPos.x;
+                    const dy = touch.clientY - touchStartPos.y;
+                    const dt = Date.now() - touchStartPos.time;
+                    const isQuickTap = dt < 300 && Math.abs(dx) < 15 && Math.abs(dy) < 15;
+
+                    if (isQuickTap) {
+                        const now = Date.now();
+                        if (now - lastTapTime < 350) {
+                            // Double-tap
+                            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                            const stickyNote = target && target.closest('.sticky-note');
+                            const textBox = target && target.closest('.canvas-text-box');
+                            if (stickyNote) {
+                                openEditor(parseInt(stickyNote.dataset.id));
+                            } else if (textBox) {
+                                const id = parseInt(textBox.dataset.textId);
+                                const tb = textBoxes.find(t => t.id === id);
+                                if (tb) startEditTextBox(textBox, tb);
+                            }
+                            lastTapTime = 0;
+                        } else {
+                            lastTapTime = now;
+                        }
+                    }
+                }
+
+                // Finalize selection rectangle
+                if (activeTouchAction === 'selecting' && selecting && e.changedTouches.length === 1) {
+                    const touch = e.changedTouches[0];
+                    const canvasEl = document.getElementById('canvas');
+                    const canvasRect = canvasEl.getBoundingClientRect();
+                    const cx = (touch.clientX - canvasRect.left) / zoom;
+                    const cy = (touch.clientY - canvasRect.top) / zoom;
+                    const rx = Math.min(selecting.startX, cx);
+                    const ry = Math.min(selecting.startY, cy);
+                    const rw = Math.abs(cx - selecting.startX);
+                    const rh = Math.abs(cy - selecting.startY);
+                    if (selectRectEl) { selectRectEl.remove(); selectRectEl = null; }
+                    if (rw < 5 && rh < 5) {
+                        selectedIds.clear(); selectedTextIds.clear();
+                    } else {
+                        selectedIds.clear(); selectedTextIds.clear();
+                        ideas.forEach(idea => {
+                            if (rectsOverlap(rx, ry, rw, rh, idea.x, idea.y, idea.w, idea.h)) selectedIds.add(idea.id);
+                        });
+                        textBoxes.forEach(tb => {
+                            if (rectsOverlap(rx, ry, rw, rh, tb.x, tb.y, tb.w, tb.h)) selectedTextIds.add(tb.id);
+                        });
+                    }
+                    selecting = null;
+                    render();
+                }
+
+                // Save after drag/resize
+                if (activeTouchAction === 'drag-sticker' || activeTouchAction === 'resize') saveIdeas();
+                if (activeTouchAction === 'drag-text' || activeTouchAction === 'text-resize') saveTextBoxes();
+                if (activeTouchAction === 'group-drag') { saveIdeas(); saveTextBoxes(); }
+
+                // Reset all state
+                dragging = null; resizing = null; textDragging = null; textResizing = null;
+                groupDragging = null; panning = false;
+                pinchStartDist = null; pinchStartZoom = null;
+                touchStartPos = null; activeTouchAction = null;
+                cc.classList.remove('panning');
+            }, { passive: false });
+
+            cc.addEventListener('touchcancel', () => {
+                cancelLongPress();
+                dragging = null; resizing = null; textDragging = null; textResizing = null;
+                groupDragging = null; panning = false;
+                pinchStartDist = null; pinchStartZoom = null;
+                touchStartPos = null; activeTouchAction = null;
+                selecting = null;
+                if (selectRectEl) { selectRectEl.remove(); selectRectEl = null; }
+            });
+
+            // Prevent body-level bounce/scroll (except inside scrollable modals)
+            document.body.addEventListener('touchmove', (e) => {
+                if (!e.target.closest('.modal-content') && !e.target.closest('.editor-body') &&
+                    !e.target.closest('.search-results') && !e.target.closest('.recycle-list')) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            // Close mobile menu when a button is clicked
+            document.querySelector('.toolbar-right').addEventListener('click', (e) => {
+                if (e.target.classList.contains('btn') && window.innerWidth <= 768) {
+                    document.querySelector('.toolbar-right').classList.remove('show');
+                }
+            });
+        }
+
+        // Prevent double-tap zoom on non-input elements
+        document.addEventListener('dblclick', (e) => {
+            if (!e.target.closest('input') && !e.target.closest('textarea') && !e.target.closest('[contenteditable]')) {
+                e.preventDefault();
+            }
+        });
 
         /* ===== Color selection ===== */
         function changeColor(id, color) {
