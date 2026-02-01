@@ -3062,7 +3062,8 @@
                     const c = document.createElement('canvas');
                     c.width = w; c.height = h;
                     c.getContext('2d').drawImage(img, 0, 0, w, h);
-                    const src = c.toDataURL('image/jpeg', 0.8);
+                    const isPng = file.type === 'image/png';
+                    const src = isPng ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.8);
 
                     // Initial display size: max 300px wide, keep aspect ratio
                     let dispW = Math.min(300, w);
