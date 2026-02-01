@@ -1064,6 +1064,94 @@
             color: #999;
         }
 
+        /* ===== AI Input styles ===== */
+        .ai-content {
+            max-width: 650px;
+        }
+
+        .ai-body {
+            margin-top: 20px;
+        }
+
+        .ai-body textarea {
+            width: 100%;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .ai-body textarea:focus {
+            outline: none;
+            border-color: #210F04;
+        }
+
+        .ai-response-area {
+            margin-top: 16px;
+        }
+
+        .ai-response-area label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #210F04;
+        }
+
+        .ai-response-content {
+            background: #f9f5f2;
+            border: 1px solid #e5ddd8;
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .ai-status {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #999;
+        }
+
+        .ai-status.error {
+            color: #cc3333;
+        }
+
+        .ai-sticker-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .ai-sticker-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid #e5ddd8;
+            border-radius: 8px;
+        }
+
+        .ai-sticker-item .sticker-color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .ai-sticker-item span {
+            flex: 1;
+            font-size: 14px;
+        }
+
         /* ===== Mobile / Touch Foundations ===== */
         html {
             -webkit-text-size-adjust: 100%;
@@ -1315,6 +1403,7 @@
         </div>
         <div class="toolbar-right">
             <button class="btn btn-primary" onclick="openAddModal()">New Idea</button>
+            <button class="btn" onclick="openAiInput()">AI Input</button>
             <button class="btn" onclick="addTextBox()">Text Box</button>
             <button class="btn" id="lockBtn" onclick="toggleLock()">Select</button>
 <button class="btn" onclick="toggleSearch()">Search</button>
@@ -1428,6 +1517,11 @@
                 <div class="sticker-color-list" id="stickerColorList"></div>
                 <button class="btn" style="margin-top:10px" onclick="addStickerColor()">+ Add Color</button>
             </div>
+            <div class="setting-group">
+                <label>Gemini API Key</label>
+                <input type="password" id="setApiKey" placeholder="Enter your Gemini API key">
+                <div style="font-size:12px;color:#999;margin-top:4px">Get your key at <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#FF708D">aistudio.google.com</a></div>
+            </div>
             <div class="modal-actions">
                 <button class="btn" onclick="closeSettings()">Cancel</button>
                 <button class="btn btn-primary" onclick="saveSettings()">Apply</button>
@@ -1442,6 +1536,28 @@
             <div class="recycle-list" id="recycleList"></div>
             <div class="modal-actions">
                 <button class="btn" onclick="closeRecycleBin()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Input Modal -->
+    <div class="modal" id="aiModal">
+        <div class="modal-content ai-content">
+            <div class="modal-header"><h2>AI Input</h2></div>
+            <div class="ai-body">
+                <div class="form-group">
+                    <label>Describe your ideas, and AI will generate stickers for you</label>
+                    <textarea id="aiPrompt" rows="4" placeholder="e.g. Give me 5 travel destination ideas for summer vacation..."></textarea>
+                </div>
+                <div class="ai-response-area" id="aiResponseArea" style="display:none">
+                    <label>AI Response</label>
+                    <div class="ai-response-content" id="aiResponseContent"></div>
+                </div>
+                <div class="ai-status" id="aiStatus"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn" onclick="closeAiInput()">Close</button>
+                <button class="btn btn-primary" id="aiSendBtn" onclick="sendAiInput()">Generate</button>
             </div>
         </div>
     </div>
@@ -1477,7 +1593,8 @@
             dotColor: '#210F04',
             dotSize: 2,
             dotSpacing: 60,
-            colors: ['#210F04', '#FF708D', '#107F37', '#8BBF9F', '#FFD447']
+            colors: ['#210F04', '#FF708D', '#107F37', '#8BBF9F', '#FFD447'],
+            geminiApiKey: ''
         };
 
         let ideas = [];
@@ -2648,6 +2765,134 @@
             document.body.removeChild(a);
         }
 
+        /* ===== AI Input ===== */
+        function openAiInput() {
+            if (!settings.geminiApiKey) {
+                alert('Please set your Gemini API Key in Settings first.');
+                openSettings();
+                return;
+            }
+            document.getElementById('aiPrompt').value = '';
+            document.getElementById('aiResponseArea').style.display = 'none';
+            document.getElementById('aiResponseContent').innerHTML = '';
+            document.getElementById('aiStatus').textContent = '';
+            document.getElementById('aiStatus').className = 'ai-status';
+            document.getElementById('aiSendBtn').disabled = false;
+            document.getElementById('aiSendBtn').textContent = 'Generate';
+            document.getElementById('aiModal').classList.add('show');
+        }
+
+        function closeAiInput() {
+            document.getElementById('aiModal').classList.remove('show');
+        }
+
+        async function sendAiInput() {
+            const prompt = document.getElementById('aiPrompt').value.trim();
+            if (!prompt) return;
+
+            const statusEl = document.getElementById('aiStatus');
+            const responseArea = document.getElementById('aiResponseArea');
+            const responseContent = document.getElementById('aiResponseContent');
+            const sendBtn = document.getElementById('aiSendBtn');
+
+            statusEl.textContent = 'Thinking...';
+            statusEl.className = 'ai-status';
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Generating...';
+
+            const systemPrompt = `You are a creative brainstorming assistant for an idea board app. The user will describe what ideas they want. You must respond with a JSON array of idea objects. Each object has a "title" field (short, concise, under 20 characters). Return ONLY the JSON array, no markdown, no explanation. Example: [{"title":"Beach Holiday"},{"title":"Mountain Hiking"}]`;
+
+            try {
+                const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': settings.geminiApiKey
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: systemPrompt + '\n\nUser request: ' + prompt }]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.error?.message || `API error ${response.status}`);
+                }
+
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+                // Parse JSON from response (handle markdown code blocks)
+                let cleanText = text.trim();
+                if (cleanText.startsWith('```')) {
+                    cleanText = cleanText.replace(/^```json?\n?/, '').replace(/\n?```$/, '').trim();
+                }
+
+                let ideas_from_ai;
+                try {
+                    ideas_from_ai = JSON.parse(cleanText);
+                } catch (parseErr) {
+                    // Try to extract JSON array from text
+                    const match = cleanText.match(/\[[\s\S]*\]/);
+                    if (match) {
+                        ideas_from_ai = JSON.parse(match[0]);
+                    } else {
+                        throw new Error('Could not parse AI response. Raw: ' + cleanText.substring(0, 200));
+                    }
+                }
+
+                if (!Array.isArray(ideas_from_ai) || ideas_from_ai.length === 0) {
+                    throw new Error('AI returned no ideas.');
+                }
+
+                // Show response
+                responseArea.style.display = 'block';
+                const stickersHtml = ideas_from_ai.map((item, i) => {
+                    const color = settings.colors[i % settings.colors.length];
+                    return `<div class="ai-sticker-item"><div class="sticker-color-dot" style="background:${color}"></div><span>${escapeHtml(item.title)}</span></div>`;
+                }).join('');
+                responseContent.innerHTML = `<div class="ai-sticker-list">${stickersHtml}</div>`;
+
+                // Create stickers on canvas
+                const now = Date.now();
+                const startX = (-panX / zoom) + 150;
+                const startY = (-panY / zoom) + 150;
+
+                ideas_from_ai.forEach((item, i) => {
+                    const color = settings.colors[i % settings.colors.length];
+                    ideas.push({
+                        id: now + i,
+                        title: item.title,
+                        brief: '',
+                        thoughts: '',
+                        images: [],
+                        color: color,
+                        w: 180,
+                        h: 80,
+                        x: startX + (i % 4) * 200,
+                        y: startY + Math.floor(i / 4) * 120,
+                        created: now,
+                        modified: now
+                    });
+                });
+
+                saveIdeas();
+                render();
+
+                statusEl.textContent = `✓ Created ${ideas_from_ai.length} stickers!`;
+                sendBtn.textContent = 'Generate More';
+                sendBtn.disabled = false;
+
+            } catch (err) {
+                statusEl.textContent = '✗ ' + err.message;
+                statusEl.className = 'ai-status error';
+                sendBtn.textContent = 'Retry';
+                sendBtn.disabled = false;
+            }
+        }
+
         /* ===== Settings Modal ===== */
         let settingsColorList = [];
 
@@ -2660,6 +2905,7 @@
             document.getElementById('setDotSize').value = settings.dotSize;
             document.getElementById('setDotSpacing').value = settings.dotSpacing;
             settingsColorList = settings.colors.slice();
+            document.getElementById('setApiKey').value = settings.geminiApiKey || '';
             renderStickerColorList();
             updatePreviews();
             document.getElementById('settingsModal').classList.add('show');
@@ -2746,6 +2992,7 @@
             // Read from color list (filter valid colors)
             settings.colors = settingsColorList.filter(c => c && c.startsWith('#') && c.length >= 4);
             if (settings.colors.length === 0) settings.colors = ['#210F04'];
+            settings.geminiApiKey = document.getElementById('setApiKey').value.trim();
             localStorage.setItem(SETTINGS, JSON.stringify(settings));
             applySettings();
             render();
@@ -3006,6 +3253,7 @@
                 else if (document.getElementById('editorModal').classList.contains('show')) closeEditor();
                 else if (document.getElementById('addModal').classList.contains('show')) closeAddModal();
                 else if (document.getElementById('settingsModal').classList.contains('show')) closeSettings();
+                else if (document.getElementById('aiModal').classList.contains('show')) closeAiInput();
                 else if (document.getElementById('recycleBinModal').classList.contains('show')) closeRecycleBin();
             }
         });
