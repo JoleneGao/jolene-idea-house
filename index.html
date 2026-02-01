@@ -2894,7 +2894,7 @@
             const oldStyle = document.getElementById('dynamic-dots');
             if (oldStyle) oldStyle.remove();
 
-            style.textContent = `body::before{background-image:radial-gradient(circle,${settings.dotColor} ${scaledSize}px,transparent ${scaledSize}px);background-size:${scaledSpacing}px ${scaledSpacing}px;}`;
+            style.textContent = `body::before{background-image:radial-gradient(circle,${settings.dotColor} ${scaledSize}px,transparent ${scaledSize}px);background-size:${scaledSpacing}px ${scaledSpacing}px;background-position:${panX}px ${panY}px;}`;
             document.head.appendChild(style);
 
             document.getElementById('canvas').style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
