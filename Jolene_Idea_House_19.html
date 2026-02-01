@@ -3150,10 +3150,12 @@
         function uploadCanvasImage(file) {
             if (!file || !file.type.startsWith('image/')) return;
             const reader = new FileReader();
+            reader.onerror = () => { alert('Failed to read image file.'); };
             reader.onload = (e) => {
                 const img = new Image();
+                img.onerror = () => { alert('Failed to load image. The format may not be supported.'); };
                 img.onload = () => {
-                    const maxDim = 1200;
+                    const maxDim = 800;
                     let w = img.width, h = img.height;
                     if (w > maxDim || h > maxDim) {
                         if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
@@ -3162,8 +3164,18 @@
                     const c = document.createElement('canvas');
                     c.width = w; c.height = h;
                     c.getContext('2d').drawImage(img, 0, 0, w, h);
-                    const isPng = file.type === 'image/png';
-                    const src = isPng ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.8);
+
+                    // Try PNG first for PNG files, fall back to JPEG if too large
+                    let src;
+                    if (file.type === 'image/png') {
+                        src = c.toDataURL('image/png');
+                        // If PNG base64 > 500KB, fall back to JPEG
+                        if (src.length > 500000) {
+                            src = c.toDataURL('image/jpeg', 0.7);
+                        }
+                    } else {
+                        src = c.toDataURL('image/jpeg', 0.7);
+                    }
 
                     // Initial display size: max 300px wide, keep aspect ratio
                     let dispW = Math.min(300, w);
@@ -3179,7 +3191,32 @@
                         w: dispW, h: dispH,
                         aspectRatio: w / h
                     });
-                    saveCanvasImages();
+
+                    try {
+                        saveCanvasImages();
+                    } catch (err) {
+                        // localStorage full — try smaller compression
+                        canvasImages.pop();
+                        const smallC = document.createElement('canvas');
+                        const sw = Math.round(w * 0.5), sh = Math.round(h * 0.5);
+                        smallC.width = sw; smallC.height = sh;
+                        smallC.getContext('2d').drawImage(img, 0, 0, sw, sh);
+                        src = smallC.toDataURL('image/jpeg', 0.5);
+                        canvasImages.push({
+                            id: Date.now(),
+                            src,
+                            x: cx, y: cy,
+                            w: dispW, h: dispH,
+                            aspectRatio: w / h
+                        });
+                        try {
+                            saveCanvasImages();
+                        } catch (err2) {
+                            canvasImages.pop();
+                            alert('Not enough storage space. Try deleting some images first.');
+                            return;
+                        }
+                    }
                     render();
                 };
                 img.src = e.target.result;
