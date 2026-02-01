@@ -1832,7 +1832,8 @@
             const rect = el.getBoundingClientRect();
             const offsetX = e.clientX - rect.left;
             const offsetY = e.clientY - rect.top;
-            const isResizing = (offsetX > rect.width - 40) && (offsetY > rect.height - 40);
+            const resizeZone = Math.min(40, rect.width * 0.3, rect.height * 0.3);
+            const isResizing = (offsetX > rect.width - resizeZone) && (offsetY > rect.height - resizeZone);
 
             if (isResizing || e.target.closest('.note-action-btn') || e.target.closest('.color-picker-mini')) {
                 return;
