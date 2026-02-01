@@ -197,12 +197,39 @@
             height: 0;
             border-style: solid;
             border-width: 0 0 12px 12px;
-            border-color: transparent transparent currentColor transparent;
-            opacity: 0.4;
+            border-color: transparent transparent #bbb transparent;
         }
 
         .sticky-note:hover .resize-handle {
             opacity: 1;
+        }
+
+        .move-handle {
+            display: none;
+            position: absolute;
+            left: -6px;
+            bottom: -6px;
+            width: 32px;
+            height: 32px;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 2px solid #bbb;
+            border-radius: 50%;
+            cursor: move;
+            z-index: 101;
+            font-size: 14px;
+            color: #999;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            touch-action: none;
+        }
+
+        body.touch-device .sticky-note.touch-active .move-handle {
+            display: flex;
+        }
+
+        body.touch-device .canvas-text-box.touch-active .move-handle {
+            display: flex;
         }
 
         .sticky-note:hover {
@@ -391,7 +418,7 @@
             height: 0;
             border-style: solid;
             border-width: 0 0 10px 10px;
-            border-color: transparent transparent rgba(33,15,4,0.4) transparent;
+            border-color: transparent transparent #bbb transparent;
         }
 
         .canvas-text-box:hover .text-resize-handle {
@@ -484,6 +511,7 @@
 
         .modal.show {
             display: flex;
+            touch-action: auto;
         }
 
         .modal-content {
@@ -589,8 +617,10 @@
 
         .editor-body {
             flex: 1;
+            min-height: 0;
             padding: 30px;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .editor-field {
@@ -1051,6 +1081,16 @@
             -webkit-touch-callout: none;
         }
 
+        body.touch-device .modal {
+            touch-action: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        body.touch-device .modal-content {
+            touch-action: pan-y;
+            -webkit-overflow-scrolling: touch;
+        }
+
         .mobile-menu-btn {
             display: none;
         }
@@ -1167,6 +1207,14 @@
                 height: 44px;
             }
 
+            .move-handle {
+                width: 40px;
+                height: 40px;
+                left: -10px;
+                bottom: -10px;
+                font-size: 16px;
+            }
+
             .text-font-size-control {
                 padding: 4px 10px;
             }
@@ -1195,6 +1243,7 @@
                 max-height: 100vh;
                 border-radius: 0;
                 border: none;
+                touch-action: auto;
             }
 
             .editor-header {
@@ -1556,7 +1605,7 @@
                 note.dataset.id = idea.id;
                 note.style.cssText = `left:${idea.x}px;top:${idea.y}px;width:${idea.w}px;height:${idea.h}px;background:${idea.color};color:${isLight(idea.color)?'#210F04':'white'}`;
 
-                const fontSize = Math.max(0.8, Math.min(1.4, idea.w / 180));
+                const fontSize = Math.max(1.0, Math.min(1.8, idea.w / 130));
                 const titleStyle = `style="font-size: ${fontSize}em"`;
 
                 const colorPickerHtml = `
@@ -1578,6 +1627,7 @@
                     ${colorPickerHtml}
                     <div class="note-title" ${titleStyle}>${idea.title}</div>
                     ${timeTooltip}
+                    <div class="move-handle" title="Drag to move">✥</div>
                     <div class="resize-handle" onmousedown="startResize(event, ${idea.id})"></div>
                 `;
                 note.ondblclick = (e) => {
@@ -1603,6 +1653,7 @@
                         <span>${tb.fontSize}px</span>
                         <button onclick="changeTextFontSize(${tb.id}, 2)">+</button>
                     </div>
+                    <div class="move-handle" title="Drag to move">✥</div>
                     <div class="text-resize-handle" onmousedown="startTextResize(event, ${tb.id})"></div>
                 `;
                 box.ondblclick = (e) => {
@@ -1782,7 +1833,7 @@
                     if (noteEl) {
                         noteEl.style.width = idea.w + 'px';
                         noteEl.style.height = idea.h + 'px';
-                        const fontSize = Math.max(0.8, Math.min(1.4, idea.w / 180));
+                        const fontSize = Math.max(1.0, Math.min(1.8, idea.w / 130));
                         noteEl.querySelector('.note-title').style.fontSize = fontSize + 'em';
                     }
                 }
@@ -1983,6 +2034,30 @@
                 const isTextResize = target && target.closest('.text-resize-handle');
                 const isTextDelete = target && target.closest('.text-delete-btn');
                 const isFontControl = target && target.closest('.text-font-size-control');
+                const isMoveHandle = target && target.closest('.move-handle');
+
+                // Move handle: initiate drag
+                if (isMoveHandle) {
+                    touchStartPos = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+                    if (stickyNote) {
+                        const id = parseInt(stickyNote.dataset.id);
+                        const idea = ideas.find(i => i.id === id);
+                        setTouchActive(id, null);
+                        activeTouchAction = 'drag-sticker';
+                        if (idea) {
+                            dragging = { el: stickyNote, idea, startX: touch.clientX / zoom, startY: touch.clientY / zoom, origX: idea.x, origY: idea.y };
+                        }
+                    } else if (textBox) {
+                        const id = parseInt(textBox.dataset.textId);
+                        const tb = textBoxes.find(t => t.id === id);
+                        setTouchActive(null, id);
+                        activeTouchAction = 'drag-text';
+                        if (tb) {
+                            textDragging = { el: textBox, tb, startX: touch.clientX / zoom, startY: touch.clientY / zoom, origX: tb.x, origY: tb.y };
+                        }
+                    }
+                    return;
+                }
 
                 // Let button/control clicks pass through
                 if (isActionBtn || isTextDelete || isFontControl) {
