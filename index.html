@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Idea House</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Noto+Sans+SC:wght@100;300;400;500;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Noto+Sans+SC:wght@100;300;400;500;700;900&family=Noto+Serif+SC:wght@400;700&family=ZCOOL+XiaoWei&family=ZCOOL+QingKe+HuangYou&family=Ma+Shan+Zheng&family=Liu+Jian+Mao+Cao&family=Long+Cang&family=Zhi+Mang+Xing&display=swap');
 
         * {
             margin: 0;
@@ -379,7 +379,6 @@
         /* ===== Text box styles ===== */
         .canvas-text-box {
             position: absolute;
-            font-family: 'DM Serif Display', 'Noto Sans SC', serif;
             cursor: move;
             min-width: 80px;
             min-height: 40px;
@@ -492,6 +491,34 @@
             color: #210F04;
             min-width: 28px;
             text-align: center;
+        }
+
+        .text-font-control {
+            position: absolute;
+            top: -34px;
+            left: 0;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .canvas-text-box:hover .text-font-control {
+            opacity: 1;
+        }
+
+        .text-font-control select {
+            font-size: 11px;
+            padding: 3px 6px;
+            border: 1px solid rgba(0,0,0,0.2);
+            border-radius: 10px;
+            background: white;
+            color: #210F04;
+            cursor: pointer;
+            outline: none;
+            max-width: 140px;
+        }
+
+        .text-font-control select:focus {
+            border-color: #210F04;
         }
 
         /* ===== Modal styles ===== */
@@ -1094,6 +1121,7 @@
         body.touch-device .canvas-text-box.touch-active .text-delete-btn { opacity: 1; }
         body.touch-device .canvas-text-box.touch-active .text-resize-handle { opacity: 0.6; }
         body.touch-device .canvas-text-box.touch-active .text-font-size-control { opacity: 1; }
+        body.touch-device .canvas-text-box.touch-active .text-font-control { opacity: 1; }
         body.touch-device .time-tooltip { display: none; }
         body.touch-device .sticky-note.touch-active .image-preview-actions { opacity: 1; }
 
@@ -1633,10 +1661,15 @@
                 const box = document.createElement('div');
                 box.className = 'canvas-text-box' + (selectedTextIds.has(tb.id) ? ' selected' : '') + (touchActiveTextId === tb.id ? ' touch-active' : '');
                 box.dataset.textId = tb.id;
-                box.style.cssText = `left:${tb.x}px;top:${tb.y}px;width:${tb.w}px;height:${tb.h}px;font-size:${tb.fontSize}px;color:${tb.color}`;
+                const tbFont = tb.fontFamily || 'DM Serif Display';
+                box.style.cssText = `left:${tb.x}px;top:${tb.y}px;width:${tb.w}px;height:${tb.h}px;font-size:${tb.fontSize}px;color:${tb.color};font-family:'${tbFont}','Noto Sans SC',serif`;
+                const fontOptions = TEXT_FONTS.map(f => `<option value="${f.value}"${f.value === tbFont ? ' selected' : ''} style="font-family:'${f.value}'">${f.label}</option>`).join('');
                 box.innerHTML = `
                     <div class="text-content" style="width:100%;height:100%;overflow:hidden;outline:none;white-space:pre-wrap;word-break:break-word;">${escapeHtml(tb.content)}</div>
                     <button class="text-delete-btn" onclick="event.stopPropagation(); deleteTextBox(${tb.id})" title="Delete">&#x2715;</button>
+                    <div class="text-font-control" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+                        <select onchange="changeTextFont(${tb.id}, this.value)">${fontOptions}</select>
+                    </div>
                     <div class="text-font-size-control" onmousedown="event.stopPropagation()">
                         <button onclick="changeTextFontSize(${tb.id}, -2)">-</button>
                         <span>${tb.fontSize}px</span>
@@ -2803,6 +2836,26 @@
         }
 
         /* ===== Text box feature ===== */
+        const TEXT_FONTS = [
+            { label: 'DM Serif (Default)', value: 'DM Serif Display' },
+            { label: 'Noto Sans SC', value: 'Noto Sans SC' },
+            { label: 'Noto Serif SC', value: 'Noto Serif SC' },
+            { label: '站酷小薇体', value: 'ZCOOL XiaoWei' },
+            { label: '庆科黄油体', value: 'ZCOOL QingKe HuangYou' },
+            { label: '马善政楷体', value: 'Ma Shan Zheng' },
+            { label: '毛草体', value: 'Liu Jian Mao Cao' },
+            { label: '龙藏体', value: 'Long Cang' },
+            { label: '志芒行书', value: 'Zhi Mang Xing' },
+        ];
+
+        function changeTextFont(id, fontFamily) {
+            const tb = textBoxes.find(t => t.id === id);
+            if (!tb) return;
+            tb.fontFamily = fontFamily;
+            saveTextBoxes();
+            render();
+        }
+
         function addTextBox() {
             const id = Date.now();
             textBoxes.push({
@@ -2810,6 +2863,7 @@
                 type: 'text',
                 content: 'Double-click to edit',
                 fontSize: 24,
+                fontFamily: 'DM Serif Display',
                 color: '#210F04',
                 x: 200 + Math.random() * 300,
                 y: 200 + Math.random() * 200,
