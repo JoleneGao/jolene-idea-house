@@ -3165,14 +3165,9 @@
                     c.width = w; c.height = h;
                     c.getContext('2d').drawImage(img, 0, 0, w, h);
 
-                    // Try PNG first for PNG files, fall back to JPEG if too large
                     let src;
                     if (file.type === 'image/png') {
                         src = c.toDataURL('image/png');
-                        // If PNG base64 > 500KB, fall back to JPEG
-                        if (src.length > 500000) {
-                            src = c.toDataURL('image/jpeg', 0.7);
-                        }
                     } else {
                         src = c.toDataURL('image/jpeg', 0.7);
                     }
@@ -3195,13 +3190,13 @@
                     try {
                         saveCanvasImages();
                     } catch (err) {
-                        // localStorage full — try smaller compression
+                        // localStorage full — try smaller size
                         canvasImages.pop();
                         const smallC = document.createElement('canvas');
                         const sw = Math.round(w * 0.5), sh = Math.round(h * 0.5);
                         smallC.width = sw; smallC.height = sh;
                         smallC.getContext('2d').drawImage(img, 0, 0, sw, sh);
-                        src = smallC.toDataURL('image/jpeg', 0.5);
+                        src = (file.type === 'image/png') ? smallC.toDataURL('image/png') : smallC.toDataURL('image/jpeg', 0.5);
                         canvasImages.push({
                             id: Date.now(),
                             src,
