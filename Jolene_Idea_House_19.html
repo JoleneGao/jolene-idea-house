@@ -2799,7 +2799,40 @@
             sendBtn.disabled = true;
             sendBtn.textContent = 'Generating...';
 
-            const systemPrompt = `You are a creative brainstorming assistant for an idea board app. The user will describe what ideas they want. You must respond with a JSON array of idea objects. Each object has a "title" field (short, concise, under 20 characters). Return ONLY the JSON array, no markdown, no explanation. Example: [{"title":"Beach Holiday"},{"title":"Mountain Hiking"}]`;
+            const systemPrompt = `You are an assistant for an idea board canvas app. The canvas has two types of elements:
+
+1. **Text Box**: A label/category header (like "Travel", "Work", "Cooking"). Used for grouping.
+2. **Sticker**: An idea card with a title, optional brief description, and optional detailed thoughts (random_thoughts).
+
+The user will describe what they want on the canvas in natural language. You must understand their intent and generate the appropriate elements.
+
+Rules:
+- If the user mentions a category/group label, create a "textbox" for it.
+- If the user mentions specific ideas, create "sticker" items for them.
+- Stickers that belong under a text box should be positioned after it (they will be placed below it automatically).
+- Fill in "brief" for short descriptions and "random_thoughts" for longer notes/details the user provides.
+- Title should be short (under 20 chars). Put longer info into brief or random_thoughts.
+
+Return ONLY a JSON array. Each element is one of:
+  {"type":"textbox","content":"Category Name"}
+  {"type":"sticker","title":"Idea Name","brief":"short description","random_thoughts":"detailed notes","parent":"Category Name"}
+
+The "parent" field on stickers indicates which textbox they belong under (for layout purposes). If no parent, omit it.
+
+Example input: "Add a Travel section, with Mount Fuji underneath. I want to climb it and take a boat ride."
+Example output:
+[
+  {"type":"textbox","content":"Travel"},
+  {"type":"sticker","title":"Mount Fuji","brief":"","random_thoughts":"I want to climb Mount Fuji and take a boat ride","parent":"Travel"}
+]
+
+Example input: "Give me 3 dinner ideas"
+Example output:
+[
+  {"type":"sticker","title":"Pasta Carbonara","brief":"Italian classic","random_thoughts":""},
+  {"type":"sticker","title":"Sushi Bowl","brief":"Fresh and healthy","random_thoughts":""},
+  {"type":"sticker","title":"Tacos","brief":"Mexican street food","random_thoughts":""}
+]`;
 
             try {
                 const response = await fetch('https://once.novai.su/v1/chat/completions', {
@@ -2831,58 +2864,111 @@
                     cleanText = cleanText.replace(/^```json?\n?/, '').replace(/\n?```$/, '').trim();
                 }
 
-                let ideas_from_ai;
+                let items;
                 try {
-                    ideas_from_ai = JSON.parse(cleanText);
+                    items = JSON.parse(cleanText);
                 } catch (parseErr) {
-                    // Try to extract JSON array from text
                     const match = cleanText.match(/\[[\s\S]*\]/);
                     if (match) {
-                        ideas_from_ai = JSON.parse(match[0]);
+                        items = JSON.parse(match[0]);
                     } else {
                         throw new Error('Could not parse AI response. Raw: ' + cleanText.substring(0, 200));
                     }
                 }
 
-                if (!Array.isArray(ideas_from_ai) || ideas_from_ai.length === 0) {
-                    throw new Error('AI returned no ideas.');
+                if (!Array.isArray(items) || items.length === 0) {
+                    throw new Error('AI returned no items.');
                 }
 
-                // Show response
-                responseArea.style.display = 'block';
-                const stickersHtml = ideas_from_ai.map((item, i) => {
-                    const color = settings.colors[i % settings.colors.length];
-                    return `<div class="ai-sticker-item"><div class="sticker-color-dot" style="background:${color}"></div><span>${escapeHtml(item.title)}</span></div>`;
-                }).join('');
-                responseContent.innerHTML = `<div class="ai-sticker-list">${stickersHtml}</div>`;
-
-                // Create stickers on canvas
+                // Position elements on canvas
                 const now = Date.now();
-                const startX = (-panX / zoom) + 150;
-                const startY = (-panY / zoom) + 150;
+                const baseX = (-panX / zoom) + 150;
+                const baseY = (-panY / zoom) + 150;
 
-                ideas_from_ai.forEach((item, i) => {
-                    const color = settings.colors[i % settings.colors.length];
+                // Track textbox positions so child stickers go below their parent
+                const textboxPositions = {}; // parent name -> { x, y, count }
+                let freeX = baseX;
+                let freeY = baseY;
+                let stickerCount = 0;
+                let textboxCount = 0;
+                let createdStickers = 0;
+                let createdTextboxes = 0;
+
+                // First pass: place textboxes
+                items.filter(it => it.type === 'textbox').forEach((item, i) => {
+                    const x = baseX + i * 280;
+                    const y = baseY;
+                    const id = now + textboxCount;
+                    textBoxes.push({
+                        id,
+                        type: 'text',
+                        content: item.content || 'Untitled',
+                        fontSize: 28,
+                        color: '#210F04',
+                        x, y,
+                        w: 240,
+                        h: 45
+                    });
+                    textboxPositions[item.content] = { x, y: y + 65, count: 0 };
+                    textboxCount++;
+                    createdTextboxes++;
+                });
+
+                // Second pass: place stickers
+                items.filter(it => it.type === 'sticker').forEach((item, i) => {
+                    const color = settings.colors[stickerCount % settings.colors.length];
+                    let x, y;
+
+                    if (item.parent && textboxPositions[item.parent]) {
+                        const parentPos = textboxPositions[item.parent];
+                        x = parentPos.x + (parentPos.count % 2) * 200;
+                        y = parentPos.y + Math.floor(parentPos.count / 2) * 110;
+                        parentPos.count++;
+                    } else {
+                        // No parent — place in a grid after textboxes
+                        const offsetX = textboxCount * 280;
+                        x = baseX + offsetX + (stickerCount % 3) * 200;
+                        y = baseY + Math.floor(stickerCount / 3) * 110;
+                    }
+
                     ideas.push({
-                        id: now + i,
-                        title: item.title,
-                        brief: '',
-                        thoughts: '',
+                        id: now + 1000 + stickerCount,
+                        title: item.title || 'Untitled',
+                        brief: item.brief || '',
+                        thoughts: item.random_thoughts || '',
                         images: [],
-                        color: color,
+                        color,
                         w: 180,
                         h: 80,
-                        x: startX + (i % 4) * 200,
-                        y: startY + Math.floor(i / 4) * 120,
+                        x, y,
                         created: now,
                         modified: now
                     });
+                    stickerCount++;
+                    createdStickers++;
                 });
 
                 saveIdeas();
+                saveTextBoxes();
                 render();
 
-                statusEl.textContent = `✓ Created ${ideas_from_ai.length} stickers!`;
+                // Show preview
+                responseArea.style.display = 'block';
+                const previewHtml = items.map(item => {
+                    if (item.type === 'textbox') {
+                        return `<div class="ai-sticker-item"><div class="sticker-color-dot" style="background:#210F04"></div><span><b>${escapeHtml(item.content)}</b> (text box)</span></div>`;
+                    } else {
+                        const detail = [item.brief, item.random_thoughts].filter(Boolean).join(' · ');
+                        const color = settings.colors[0];
+                        return `<div class="ai-sticker-item"><div class="sticker-color-dot" style="background:${color}"></div><span>${escapeHtml(item.title)}${detail ? ' — ' + escapeHtml(detail) : ''}</span></div>`;
+                    }
+                }).join('');
+                responseContent.innerHTML = `<div class="ai-sticker-list">${previewHtml}</div>`;
+
+                const parts = [];
+                if (createdTextboxes > 0) parts.push(`${createdTextboxes} text box${createdTextboxes > 1 ? 'es' : ''}`);
+                if (createdStickers > 0) parts.push(`${createdStickers} sticker${createdStickers > 1 ? 's' : ''}`);
+                statusEl.textContent = `✓ Created ${parts.join(' + ')}!`;
                 sendBtn.textContent = 'Generate More';
                 sendBtn.disabled = false;
 
