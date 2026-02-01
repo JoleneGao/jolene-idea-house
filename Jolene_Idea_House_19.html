@@ -471,6 +471,84 @@
             text-align: center;
         }
 
+        /* ===== Canvas Image styles ===== */
+        .canvas-image {
+            position: absolute;
+            cursor: move;
+            overflow: visible;
+        }
+
+        .canvas-image:hover {
+            outline: 2px dashed rgba(33, 15, 4, 0.3);
+            z-index: 10;
+        }
+
+        .canvas-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-drag: none;
+            border-radius: 4px;
+        }
+
+        .canvas-image .img-delete-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border: 1.5px solid #bbb;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #210F04;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 20;
+        }
+
+        .canvas-image:hover .img-delete-btn {
+            opacity: 1;
+        }
+
+        .canvas-image .img-delete-btn:hover {
+            background: #FF708D;
+            color: white;
+            border-color: #FF708D;
+        }
+
+        .canvas-image .img-resize-handle {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 16px;
+            height: 16px;
+            cursor: nwse-resize;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .canvas-image .img-resize-handle::before {
+            content: '';
+            position: absolute;
+            right: 3px;
+            bottom: 3px;
+            width: 8px;
+            height: 8px;
+            border-right: 2px solid #bbb;
+            border-bottom: 2px solid #bbb;
+        }
+
+        .canvas-image:hover .img-resize-handle {
+            opacity: 0.6;
+        }
+
         /* ===== Modal styles ===== */
         .modal {
             display: none;
@@ -1072,6 +1150,8 @@
         body.touch-device .canvas-text-box.touch-active .text-resize-handle { opacity: 0.6; }
         body.touch-device .canvas-text-box.touch-active .text-font-size-control { opacity: 1; }
         body.touch-device .sticky-note.touch-active .image-preview-actions { opacity: 1; }
+        body.touch-device .canvas-image.touch-active .img-delete-btn { opacity: 1; }
+        body.touch-device .canvas-image.touch-active .img-resize-handle { opacity: 0.6; }
 
         /* ===== Mobile Responsive ===== */
         @media (max-width: 768px) {
@@ -1171,6 +1251,19 @@
             }
 
             .canvas-text-box .text-resize-handle {
+                width: 44px;
+                height: 44px;
+            }
+
+            .canvas-image .img-delete-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+                top: -16px;
+                right: -16px;
+            }
+
+            .canvas-image .img-resize-handle {
                 width: 44px;
                 height: 44px;
             }
@@ -1293,6 +1386,8 @@
         <div class="toolbar-right">
             <button class="btn btn-primary" onclick="openAddModal()">New Idea</button>
             <button class="btn" onclick="addTextBox()">Text Box</button>
+            <button class="btn" onclick="document.getElementById('canvasImageUpload').click()">Image</button>
+            <input type="file" id="canvasImageUpload" accept="image/*" style="display:none">
             <button class="btn" id="lockBtn" onclick="toggleLock()">Select</button>
 <button class="btn" onclick="toggleSearch()">Search</button>
             <button class="btn" onclick="openSettings()">Settings</button>
@@ -1443,6 +1538,7 @@
         const SETTINGS = 'jolene_settings';
         const RECYCLE_BIN = 'jolene_recycle_bin';
         const TEXT_BOXES = 'jolene_text_boxes';
+        const CANVAS_IMAGES = 'jolene_canvas_images';
 
         let settings = {
             title: 'Idea House',
@@ -1456,6 +1552,7 @@
         let ideas = [];
         let recycleBin = [];
         let textBoxes = [];
+        let canvasImages = [];
         let zoom = 1, panX = 0, panY = 0;
         let selectedColor = '#210F04';
         let editingId = null;
@@ -1472,17 +1569,23 @@
         let touchActiveStickerId = null;
         let touchActiveTextId = null;
 
-        function setTouchActive(stickerId, textId) {
+        function setTouchActive(stickerId, textId, imageId) {
             touchActiveStickerId = stickerId;
             touchActiveTextId = textId;
+            touchActiveImageId = imageId || null;
             document.querySelectorAll('.sticky-note.touch-active').forEach(el => el.classList.remove('touch-active'));
             document.querySelectorAll('.canvas-text-box.touch-active').forEach(el => el.classList.remove('touch-active'));
+            document.querySelectorAll('.canvas-image.touch-active').forEach(el => el.classList.remove('touch-active'));
             if (stickerId !== null) {
                 const el = document.querySelector(`.sticky-note[data-id="${stickerId}"]`);
                 if (el) el.classList.add('touch-active');
             }
             if (textId !== null) {
                 const el = document.querySelector(`.canvas-text-box[data-text-id="${textId}"]`);
+                if (el) el.classList.add('touch-active');
+            }
+            if (touchActiveImageId !== null) {
+                const el = document.querySelector(`.canvas-image[data-img-id="${touchActiveImageId}"]`);
                 if (el) el.classList.add('touch-active');
             }
         }
@@ -1554,6 +1657,15 @@
             localStorage.setItem(STORAGE, JSON.stringify(ideas));
         }
 
+        function loadCanvasImages() {
+            const stored = localStorage.getItem(CANVAS_IMAGES);
+            if (stored) canvasImages = JSON.parse(stored);
+        }
+
+        function saveCanvasImages() {
+            localStorage.setItem(CANVAS_IMAGES, JSON.stringify(canvasImages));
+        }
+
         /* ===== Render ===== */
         function render() {
             const canvas = document.getElementById('canvas');
@@ -1617,6 +1729,22 @@
                 box.onmousedown = (e) => startTextDrag(e, box, tb);
                 canvas.appendChild(box);
             });
+
+            // Render canvas images
+            canvasImages.forEach(ci => {
+                const el = document.createElement('div');
+                el.className = 'canvas-image' + (touchActiveImageId === ci.id ? ' touch-active' : '');
+                el.dataset.imgId = ci.id;
+                el.style.cssText = `left:${ci.x}px;top:${ci.y}px;width:${ci.w}px;height:${ci.h}px`;
+                el.innerHTML = `
+                    <img src="${ci.src}" alt="canvas image" draggable="false">
+                    <button class="img-delete-btn" onclick="event.stopPropagation(); deleteCanvasImage(${ci.id})" title="Delete">&#x2715;</button>
+                    <div class="move-handle" title="Drag to move">✥</div>
+                    <div class="img-resize-handle" onmousedown="startImageResize(event, ${ci.id})"></div>
+                `;
+                el.onmousedown = (e) => startImageDrag(e, el, ci);
+                canvas.appendChild(el);
+            });
         }
 
         function escapeHtml(str) {
@@ -1632,6 +1760,9 @@
         let resizing = null;
         let textDragging = null;
         let textResizing = null;
+        let imageDragging = null;
+        let imageResizing = null;
+        let touchActiveImageId = null;
 
         /* ===== Lock & Multi-select ===== */
         let canvasLocked = false;
@@ -1817,6 +1948,24 @@
                 textDragging.tb.y = textDragging.origY + dy;
                 textDragging.el.style.left = textDragging.tb.x + 'px';
                 textDragging.el.style.top = textDragging.tb.y + 'px';
+            } else if (imageResizing) {
+                const dx = (e.clientX - imageResizing.startX) / zoom;
+                const ci = canvasImages.find(c => c.id === imageResizing.id);
+                if (ci) {
+                    const newW = Math.max(40, imageResizing.startW + dx);
+                    const newH = newW / imageResizing.aspectRatio;
+                    ci.w = newW;
+                    ci.h = newH;
+                    const el = document.querySelector(`[data-img-id="${ci.id}"]`);
+                    if (el) { el.style.width = ci.w + 'px'; el.style.height = ci.h + 'px'; }
+                }
+            } else if (imageDragging) {
+                const dx = e.clientX/zoom - imageDragging.startX;
+                const dy = e.clientY/zoom - imageDragging.startY;
+                imageDragging.ci.x = imageDragging.origX + dx;
+                imageDragging.ci.y = imageDragging.origY + dy;
+                imageDragging.el.style.left = imageDragging.ci.x + 'px';
+                imageDragging.el.style.top = imageDragging.ci.y + 'px';
             }
         };
 
@@ -1869,6 +2018,8 @@
             if (dragging) { saveIdeas(); dragging = null; }
             if (textResizing) { saveTextBoxes(); textResizing = null; }
             if (textDragging) { saveTextBoxes(); textDragging = null; }
+            if (imageResizing) { saveCanvasImages(); imageResizing = null; }
+            if (imageDragging) { saveCanvasImages(); imageDragging = null; }
         };
 
         function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2) {
@@ -1981,11 +2132,14 @@
 
                 const stickyNote = target && target.closest('.sticky-note');
                 const textBox = target && target.closest('.canvas-text-box');
+                const canvasImg = target && target.closest('.canvas-image');
                 const isActionBtn = target && target.closest('.note-action-btn');
                 const isColorPicker = target && target.closest('.color-picker-mini');
                 const isResizeHandle = target && target.closest('.resize-handle');
                 const isTextResize = target && target.closest('.text-resize-handle');
                 const isTextDelete = target && target.closest('.text-delete-btn');
+                const isImgResize = target && target.closest('.img-resize-handle');
+                const isImgDelete = target && target.closest('.img-delete-btn');
                 const isFontControl = target && target.closest('.text-font-size-control');
                 const isMoveHandle = target && target.closest('.move-handle');
 
@@ -2008,14 +2162,23 @@
                         if (tb) {
                             textDragging = { el: textBox, tb, startX: touch.clientX / zoom, startY: touch.clientY / zoom, origX: tb.x, origY: tb.y };
                         }
+                    } else if (canvasImg) {
+                        const id = parseInt(canvasImg.dataset.imgId);
+                        const ci = canvasImages.find(c => c.id === id);
+                        setTouchActive(null, null, id);
+                        activeTouchAction = 'drag-image';
+                        if (ci) {
+                            imageDragging = { el: canvasImg, ci, startX: touch.clientX / zoom, startY: touch.clientY / zoom, origX: ci.x, origY: ci.y };
+                        }
                     }
                     return;
                 }
 
                 // Let button/control clicks pass through
-                if (isActionBtn || isTextDelete || isFontControl) {
+                if (isActionBtn || isTextDelete || isImgDelete || isFontControl) {
                     if (stickyNote) setTouchActive(parseInt(stickyNote.dataset.id), null);
                     else if (textBox) setTouchActive(null, parseInt(textBox.dataset.textId));
+                    else if (canvasImg) setTouchActive(null, null, parseInt(canvasImg.dataset.imgId));
                     target.click();
                     return;
                 }
@@ -2049,6 +2212,18 @@
                     const tb = textBoxes.find(t => t.id === id);
                     if (tb) {
                         textResizing = { id, startX: touch.clientX, startY: touch.clientY, startW: tb.w, startH: tb.h };
+                    }
+                    return;
+                }
+
+                // Canvas image resize handle
+                if (isImgResize && canvasImg) {
+                    const id = parseInt(canvasImg.dataset.imgId);
+                    setTouchActive(null, null, id);
+                    activeTouchAction = 'image-resize';
+                    const ci = canvasImages.find(c => c.id === id);
+                    if (ci) {
+                        imageResizing = { id, startX: touch.clientX, startY: touch.clientY, startW: ci.w, startH: ci.h, aspectRatio: ci.aspectRatio || (ci.w / ci.h) };
                     }
                     return;
                 }
@@ -2105,6 +2280,18 @@
                         if (tb) {
                             textDragging = { el: textBox, tb, startX: touch.clientX / zoom, startY: touch.clientY / zoom, origX: tb.x, origY: tb.y };
                         }
+                    }
+                    return;
+                }
+
+                // Canvas image interactions
+                if (canvasImg) {
+                    const id = parseInt(canvasImg.dataset.imgId);
+                    const ci = canvasImages.find(c => c.id === id);
+                    setTouchActive(null, null, id);
+                    activeTouchAction = 'drag-image';
+                    if (ci) {
+                        imageDragging = { el: canvasImg, ci, startX: touch.clientX / zoom, startY: touch.clientY / zoom, origX: ci.x, origY: ci.y };
                     }
                     return;
                 }
@@ -2197,6 +2384,24 @@
                         tb.h = Math.max(40, textResizing.startH + dy);
                         const el = document.querySelector(`[data-text-id="${tb.id}"]`);
                         if (el) { el.style.width = tb.w + 'px'; el.style.height = tb.h + 'px'; }
+                    }
+                } else if (activeTouchAction === 'drag-image' && imageDragging) {
+                    const dx = touch.clientX / zoom - imageDragging.startX;
+                    const dy = touch.clientY / zoom - imageDragging.startY;
+                    imageDragging.ci.x = imageDragging.origX + dx;
+                    imageDragging.ci.y = imageDragging.origY + dy;
+                    imageDragging.el.style.left = imageDragging.ci.x + 'px';
+                    imageDragging.el.style.top = imageDragging.ci.y + 'px';
+                } else if (activeTouchAction === 'image-resize' && imageResizing) {
+                    const dx = (touch.clientX - imageResizing.startX) / zoom;
+                    const ci = canvasImages.find(c => c.id === imageResizing.id);
+                    if (ci) {
+                        const newW = Math.max(40, imageResizing.startW + dx);
+                        const newH = newW / imageResizing.aspectRatio;
+                        ci.w = newW;
+                        ci.h = newH;
+                        const el = document.querySelector(`[data-img-id="${ci.id}"]`);
+                        if (el) { el.style.width = ci.w + 'px'; el.style.height = ci.h + 'px'; }
                     }
                 } else if (activeTouchAction === 'group-drag' && groupDragging) {
                     const dx = (touch.clientX - groupDragging.startClientX) / zoom;
@@ -2292,10 +2497,12 @@
                 // Save after drag/resize
                 if (activeTouchAction === 'drag-sticker' || activeTouchAction === 'resize') saveIdeas();
                 if (activeTouchAction === 'drag-text' || activeTouchAction === 'text-resize') saveTextBoxes();
+                if (activeTouchAction === 'drag-image' || activeTouchAction === 'image-resize') saveCanvasImages();
                 if (activeTouchAction === 'group-drag') { saveIdeas(); saveTextBoxes(); }
 
                 // Reset all state
                 dragging = null; resizing = null; textDragging = null; textResizing = null;
+                imageDragging = null; imageResizing = null;
                 groupDragging = null; panning = false;
                 pinchStartDist = null; pinchStartZoom = null;
                 touchStartPos = null; activeTouchAction = null;
@@ -2305,6 +2512,7 @@
             cc.addEventListener('touchcancel', () => {
                 cancelLongPress();
                 dragging = null; resizing = null; textDragging = null; textResizing = null;
+                imageDragging = null; imageResizing = null;
                 groupDragging = null; panning = false;
                 pinchStartDist = null; pinchStartZoom = null;
                 touchStartPos = null; activeTouchAction = null;
@@ -2553,6 +2761,14 @@
         // File selection
         document.getElementById('imageUpload').addEventListener('change', (e) => {
             addEditorImages(e.target.files);
+            e.target.value = '';
+        });
+
+        // Canvas image upload
+        document.getElementById('canvasImageUpload').addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                uploadCanvasImage(e.target.files[0]);
+            }
             e.target.value = '';
         });
 
@@ -2830,6 +3046,68 @@
             }
         }
 
+        /* ===== Canvas Image feature ===== */
+        function uploadCanvasImage(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const maxDim = 1200;
+                    let w = img.width, h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+                        else { w = Math.round(w * maxDim / h); h = maxDim; }
+                    }
+                    const c = document.createElement('canvas');
+                    c.width = w; c.height = h;
+                    c.getContext('2d').drawImage(img, 0, 0, w, h);
+                    const src = c.toDataURL('image/jpeg', 0.8);
+
+                    // Initial display size: max 300px wide, keep aspect ratio
+                    let dispW = Math.min(300, w);
+                    let dispH = Math.round(h * dispW / w);
+
+                    const cx = (-panX / zoom) + 200 + Math.random() * 100;
+                    const cy = (-panY / zoom) + 200 + Math.random() * 100;
+
+                    canvasImages.push({
+                        id: Date.now(),
+                        src,
+                        x: cx, y: cy,
+                        w: dispW, h: dispH,
+                        aspectRatio: w / h
+                    });
+                    saveCanvasImages();
+                    render();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function startImageDrag(e, el, ci) {
+            if (e.target.closest('.img-delete-btn') || e.target.closest('.img-resize-handle')) return;
+            e.preventDefault();
+            imageDragging = { el, ci, startX: e.clientX / zoom, startY: e.clientY / zoom, origX: ci.x, origY: ci.y };
+        }
+
+        function startImageResize(e, id) {
+            e.preventDefault();
+            e.stopPropagation();
+            const ci = canvasImages.find(c => c.id === id);
+            if (!ci) return;
+            imageResizing = { id, startX: e.clientX, startY: e.clientY, startW: ci.w, startH: ci.h, aspectRatio: ci.aspectRatio || (ci.w / ci.h) };
+        }
+
+        function deleteCanvasImage(id) {
+            if (confirm('Delete this image?')) {
+                canvasImages = canvasImages.filter(c => c.id !== id);
+                saveCanvasImages();
+                render();
+            }
+        }
+
         /* ===== Search ===== */
         function toggleSearch() {
             const panel = document.getElementById('searchPanel');
@@ -2953,9 +3231,11 @@
             if (confirm('Clear all data?') && confirm('Are you sure? This cannot be undone.')) {
                 ideas = [];
                 textBoxes = [];
+                canvasImages = [];
                 recycleBin = [];
                 saveIdeas();
                 saveTextBoxes();
+                saveCanvasImages();
                 saveRecycleBin();
                 render();
             }
@@ -2978,6 +3258,7 @@
         ideas = initializeData();
         loadRecycleBin();
         loadTextBoxes();
+        loadCanvasImages();
         render();
         updateZoom();
     </script>
