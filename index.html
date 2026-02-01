@@ -322,29 +322,6 @@
             font-size: calc(0.5em + 0.3vw);
         }
 
-        .time-tooltip {
-            position: absolute;
-            bottom: 8px;
-            right: 8px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 0.75em;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            white-space: nowrap;
-            z-index: 100;
-        }
-
-        .sticky-note:hover .time-tooltip {
-            opacity: 1;
-        }
-
-        .sticky-note .color-picker-mini.show-colors ~ .time-tooltip {
-            opacity: 0 !important;
-        }
 
         .sticky-note .color-picker-mini.show-colors ~ .resize-handle {
             pointer-events: none !important;
@@ -1094,7 +1071,6 @@
         body.touch-device .canvas-text-box.touch-active .text-delete-btn { opacity: 1; }
         body.touch-device .canvas-text-box.touch-active .text-resize-handle { opacity: 0.6; }
         body.touch-device .canvas-text-box.touch-active .text-font-size-control { opacity: 1; }
-        body.touch-device .time-tooltip { display: none; }
         body.touch-device .sticky-note.touch-active .image-preview-actions { opacity: 1; }
 
         /* ===== Mobile Responsive ===== */
@@ -1368,10 +1344,6 @@
                     <input type="text" id="editTitle">
                 </div>
                 <div class="editor-field">
-                    <label>Brief</label>
-                    <input type="text" id="editBrief">
-                </div>
-                <div class="editor-field">
                     <label>Random Thoughts</label>
                     <textarea id="editThoughts"></textarea>
                 </div>
@@ -1604,18 +1576,10 @@
                     </div>
                 `;
 
-                const timeTooltip = `
-                    <div class="time-tooltip">
-                        Created: ${formatDate(idea.created)}<br>
-                        Modified: ${formatDate(idea.modified)}
-                    </div>
-                `;
-
                 note.innerHTML = `
                     <div class="note-actions"><button class="note-action-btn" onclick="event.stopPropagation(); deleteIdea(${idea.id})" title="Delete">&#x2715;</button></div>
                     ${colorPickerHtml}
                     <div class="note-title" ${titleStyle}>${idea.title}</div>
-                    ${timeTooltip}
                     <div class="move-handle" title="Drag to move">✥</div>
                     <div class="resize-handle" onmousedown="startResize(event, ${idea.id})"></div>
                 `;
