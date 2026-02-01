@@ -2432,7 +2432,6 @@
             const idea = ideas.find(i => i.id === id);
             if (!idea) return;
             document.getElementById('editTitle').value = idea.title;
-            document.getElementById('editBrief').value = idea.brief || '';
             document.getElementById('editThoughts').value = idea.thoughts || '';
             editorImages = (idea.images || []).slice();
             renderEditorImages();
@@ -2448,7 +2447,6 @@
             const idea = ideas.find(i => i.id === editingId);
             if (idea) {
                 idea.title = document.getElementById('editTitle').value;
-                idea.brief = document.getElementById('editBrief').value;
                 idea.thoughts = document.getElementById('editThoughts').value;
                 idea.images = editorImages.slice();
                 idea.modified = Date.now();
