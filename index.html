@@ -549,6 +549,44 @@
             opacity: 0.6;
         }
 
+        .img-layer-controls {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 20;
+        }
+
+        .canvas-image:hover .img-layer-controls {
+            opacity: 1;
+        }
+
+        .img-layer-btn {
+            width: 22px;
+            height: 22px;
+            background: white;
+            border: 1.5px solid #bbb;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #210F04;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .img-layer-btn:hover {
+            background: #210F04;
+            color: white;
+            border-color: #210F04;
+        }
+
         /* ===== Modal styles ===== */
         .modal {
             display: none;
@@ -1152,6 +1190,7 @@
         body.touch-device .sticky-note.touch-active .image-preview-actions { opacity: 1; }
         body.touch-device .canvas-image.touch-active .img-delete-btn { opacity: 1; }
         body.touch-device .canvas-image.touch-active .img-resize-handle { opacity: 0.6; }
+        body.touch-device .canvas-image.touch-active .img-layer-controls { opacity: 1; }
 
         /* ===== Mobile Responsive ===== */
         @media (max-width: 768px) {
@@ -1266,6 +1305,12 @@
             .canvas-image .img-resize-handle {
                 width: 44px;
                 height: 44px;
+            }
+
+            .img-layer-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 12px;
             }
 
             .move-handle {
@@ -1731,14 +1776,18 @@
             });
 
             // Render canvas images
-            canvasImages.forEach(ci => {
+            canvasImages.forEach((ci, idx) => {
                 const el = document.createElement('div');
                 el.className = 'canvas-image' + (touchActiveImageId === ci.id ? ' touch-active' : '');
                 el.dataset.imgId = ci.id;
-                el.style.cssText = `left:${ci.x}px;top:${ci.y}px;width:${ci.w}px;height:${ci.h}px`;
+                el.style.cssText = `left:${ci.x}px;top:${ci.y}px;width:${ci.w}px;height:${ci.h}px;z-index:${idx + 1}`;
                 el.innerHTML = `
                     <img src="${ci.src}" alt="canvas image" draggable="false">
                     <button class="img-delete-btn" onclick="event.stopPropagation(); deleteCanvasImage(${ci.id})" title="Delete">&#x2715;</button>
+                    <div class="img-layer-controls" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+                        <button class="img-layer-btn" onclick="event.stopPropagation(); moveImageLayer(${ci.id}, 1)" title="Upper layer">▲</button>
+                        <button class="img-layer-btn" onclick="event.stopPropagation(); moveImageLayer(${ci.id}, -1)" title="Lower layer">▼</button>
+                    </div>
                     <div class="move-handle" title="Drag to move">✥</div>
                     <div class="img-resize-handle" onmousedown="startImageResize(event, ${ci.id})"></div>
                 `;
@@ -3099,6 +3148,17 @@
             const ci = canvasImages.find(c => c.id === id);
             if (!ci) return;
             imageResizing = { id, startX: e.clientX, startY: e.clientY, startW: ci.w, startH: ci.h, aspectRatio: ci.aspectRatio || (ci.w / ci.h) };
+        }
+
+        function moveImageLayer(id, direction) {
+            const idx = canvasImages.findIndex(c => c.id === id);
+            if (idx < 0) return;
+            const newIdx = idx + direction;
+            if (newIdx < 0 || newIdx >= canvasImages.length) return;
+            // Swap
+            [canvasImages[idx], canvasImages[newIdx]] = [canvasImages[newIdx], canvasImages[idx]];
+            saveCanvasImages();
+            render();
         }
 
         function deleteCanvasImage(id) {
