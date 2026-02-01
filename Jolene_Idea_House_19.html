@@ -3165,8 +3165,9 @@
                     c.width = w; c.height = h;
                     c.getContext('2d').drawImage(img, 0, 0, w, h);
 
+                    const isPng = file.type === 'image/png' || (file.name && file.name.toLowerCase().endsWith('.png'));
                     let src;
-                    if (file.type === 'image/png') {
+                    if (isPng) {
                         src = c.toDataURL('image/png');
                     } else {
                         src = c.toDataURL('image/jpeg', 0.7);
@@ -3196,7 +3197,7 @@
                         const sw = Math.round(w * 0.5), sh = Math.round(h * 0.5);
                         smallC.width = sw; smallC.height = sh;
                         smallC.getContext('2d').drawImage(img, 0, 0, sw, sh);
-                        src = (file.type === 'image/png') ? smallC.toDataURL('image/png') : smallC.toDataURL('image/jpeg', 0.5);
+                        src = isPng ? smallC.toDataURL('image/png') : smallC.toDataURL('image/jpeg', 0.5);
                         canvasImages.push({
                             id: Date.now(),
                             src,
