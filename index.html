@@ -1073,6 +1073,46 @@
             margin-top: 20px;
         }
 
+        .ai-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .ai-input-row textarea {
+            flex: 1;
+        }
+
+        .voice-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid #210F04;
+            background: white;
+            font-size: 20px;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .voice-btn:hover {
+            background: #f5f0ed;
+        }
+
+        .voice-btn.recording {
+            background: #cc3333;
+            border-color: #cc3333;
+            animation: voice-pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes voice-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
         .ai-body textarea {
             width: 100%;
             border: 2px solid #ddd;
@@ -1546,7 +1586,10 @@
             <div class="ai-body">
                 <div class="form-group">
                     <label>Describe your ideas, and AI will generate stickers for you</label>
-                    <textarea id="aiPrompt" rows="4" placeholder="e.g. Give me 5 travel destination ideas for summer vacation..."></textarea>
+                    <div class="ai-input-row">
+                        <textarea id="aiPrompt" rows="4" placeholder="e.g. Give me 5 travel destination ideas for summer vacation..."></textarea>
+                        <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="Voice input">🎤</button>
+                    </div>
                 </div>
                 <div class="ai-response-area" id="aiResponseArea" style="display:none">
                     <label>AI Response</label>
@@ -2783,6 +2826,103 @@
 
         function closeAiInput() {
             document.getElementById('aiModal').classList.remove('show');
+            stopVoice();
+        }
+
+        /* ===== Voice Input (Web Speech API) ===== */
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isRecording = false;
+        let voiceTextBefore = ''; // text in textarea before voice started
+
+        if (!SpeechRecognition) {
+            // Hide mic button if browser doesn't support speech
+            document.addEventListener('DOMContentLoaded', () => {
+                const btn = document.getElementById('voiceBtn');
+                if (btn) btn.style.display = 'none';
+            });
+        }
+
+        function toggleVoice() {
+            if (isRecording) {
+                stopVoice();
+            } else {
+                startVoice();
+            }
+        }
+
+        function startVoice() {
+            if (!SpeechRecognition) {
+                alert('Your browser does not support voice input.');
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'zh-CN';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            const textarea = document.getElementById('aiPrompt');
+            voiceTextBefore = textarea.value;
+            if (voiceTextBefore && !voiceTextBefore.endsWith(' ') && !voiceTextBefore.endsWith('\n')) {
+                voiceTextBefore += ' ';
+            }
+
+            recognition.onresult = (event) => {
+                let finalTranscript = '';
+                let interimTranscript = '';
+                for (let i = 0; i < event.results.length; i++) {
+                    const result = event.results[i];
+                    if (result.isFinal) {
+                        finalTranscript += result[0].transcript;
+                    } else {
+                        interimTranscript += result[0].transcript;
+                    }
+                }
+                textarea.value = voiceTextBefore + finalTranscript + interimTranscript;
+            };
+
+            recognition.onerror = (event) => {
+                if (event.error === 'no-speech') return; // silence is fine
+                console.warn('Speech recognition error:', event.error);
+                stopVoice();
+            };
+
+            recognition.onend = () => {
+                // If user didn't manually stop, the API auto-stopped (e.g. silence timeout)
+                if (isRecording) {
+                    // Update voiceTextBefore with what we have so far, then restart
+                    voiceTextBefore = document.getElementById('aiPrompt').value;
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        stopVoice();
+                    }
+                }
+            };
+
+            try {
+                recognition.start();
+                isRecording = true;
+                document.getElementById('voiceBtn').classList.add('recording');
+                document.getElementById('aiStatus').textContent = 'Listening...';
+            } catch (e) {
+                console.warn('Could not start recognition:', e);
+            }
+        }
+
+        function stopVoice() {
+            isRecording = false;
+            if (recognition) {
+                try { recognition.stop(); } catch (e) {}
+                recognition = null;
+            }
+            const btn = document.getElementById('voiceBtn');
+            if (btn) btn.classList.remove('recording');
+            const statusEl = document.getElementById('aiStatus');
+            if (statusEl && statusEl.textContent === 'Listening...') {
+                statusEl.textContent = '';
+            }
         }
 
         async function sendAiInput() {
