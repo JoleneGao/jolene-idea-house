@@ -1729,7 +1729,7 @@
                 note.dataset.id = idea.id;
                 note.style.cssText = `left:${idea.x}px;top:${idea.y}px;width:${idea.w}px;height:${idea.h}px;background:${idea.color};color:${isLight(idea.color)?'#210F04':'white'}`;
 
-                const fontSize = Math.max(1.0, Math.min(1.8, idea.w / 130));
+                const fontSize = Math.max(1.0, idea.w / 130);
                 const titleStyle = `style="font-size: ${fontSize}em"`;
 
                 const colorPickerHtml = `
@@ -1979,7 +1979,7 @@
                     if (noteEl) {
                         noteEl.style.width = idea.w + 'px';
                         noteEl.style.height = idea.h + 'px';
-                        const fontSize = Math.max(1.0, Math.min(1.8, idea.w / 130));
+                        const fontSize = Math.max(1.0, idea.w / 130);
                         noteEl.querySelector('.note-title').style.fontSize = fontSize + 'em';
                     }
                 }
